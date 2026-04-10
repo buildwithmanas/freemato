@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Track Your Order — Freemato</title>
+  <link rel="icon" type="image/png" href="/freemato-favicon.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    :root {
+      --bg: #0F172A;
+      --surface: #1E293B;
+      --surface-2: #273548;
+      --border: #334155;
+      --accent: #5C33ED;
+      --accent-muted: #2E1B6B;
+      --text: #F9FAFB;
+      --muted: #9CA3AF;
+      --success-bg: #052E16;
+      --success-text: #4ADE80;
+      --danger-bg: #450A0A;
+      --danger-text: #F87171;
+      --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+      --radius: 12px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .top-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .top-bar img {
+      height: 28px;
+    }
+
+    .top-bar-label {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .content {
+      max-width: 500px;
+      margin: 24px auto;
+      padding: 0 16px 48px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .card-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+    }
+
+    .status-pill {
+      text-align: center;
+      padding: 18px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .status-active {
+      background: var(--success-bg);
+      color: var(--success-text);
+    }
+
+    .status-preparing {
+      background: var(--surface-2);
+      color: var(--muted);
+    }
+
+    .status-delivered {
+      background: var(--accent-muted);
+      color: #A78BFA;
+    }
+
+    .pulse-dot {
+      width: 10px;
+      height: 10px;
+      background: #4ADE80;
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.6);
+      }
+
+      70% {
+        box-shadow: 0 0 0 8px rgba(74, 222, 128, 0);
+      }
+
+      100% {
+        box-shadow: 0 0 0 0 rgba(74, 222, 128, 0);
+      }
+    }
+
+    .distance-block {
+      text-align: center;
+      padding: 16px 0 8px;
+    }
+
+    .distance-value {
+      font-size: 40px;
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+
+    .distance-unit {
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    .rider-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .rider-avatar {
+      width: 48px;
+      height: 48px;
+      background: var(--accent-muted);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    .rider-name {
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .rider-phone {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    #map {
+      height: 260px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .loading-block {
+      text-align: center;
+      padding: 40px;
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .footer-note {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="top-bar">
+    <img src="/logo.png" alt="Freemato">
+    <div class="top-bar-label">Live Order Tracking</div>
+  </div>
+
+  <div class="content">
+
+    <div class="card" id="loadingCard">
+      <div class="loading-block">
+        <div class="spinner"></div>
+        <p style="color:var(--muted);">Connecting to your order...</p>
+      </div>
+    </div>
+
+    <div id="mainUI" style="display:none;">
+
+      <div class="card" style="padding:16px;">
+        <div id="statusPill" class="status-pill status-preparing">⏳ Preparing Order</div>
+      </div>
+
+      <div class="card" id="distanceCard" style="display:none;">
+        <div class="card-title">📡 Rider Distance</div>
+        <div class="distance-block">
+          <div class="distance-value" id="distanceVal">—</div>
+          <div class="distance-unit" id="distanceNote">away from you</div>
+        </div>
+        <div id="map" style="display:none;"></div>
+        <p class="footer-note" id="updateNote">Updating every 5 seconds...</p>
+      </div>
+
+      <div class="card" id="riderInfoCard" style="display:none;">
+        <div class="card-title">🛵 Your Rider</div>
+        <div class="rider-card">
+          <div class="rider-avatar">🛵</div>
+          <div>
+            <div class="rider-name" id="riderName">Your Rider</div>
+            <div class="rider-phone" id="riderPhone">📞 Contact Private</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    const orderId = new URLSearchParams(window.location.search).get('order');
+    let map, riderMarker, destMarker;
+
+    function getDistanceKm(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function initOrUpdateMap(loc, dest) {
+      if (!loc?.latitude || !dest?.latitude) return;
+      const mapEl = document.getElementById('map');
+      mapEl.style.display = 'block';
+      if (!map) {
+        map = L.map('map').setView([loc.latitude, loc.longitude], 14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+        const riderIcon = L.divIcon({ html: '🛵', className: '', iconSize: [30, 30], iconAnchor: [15, 15] });
+        const destIcon = L.divIcon({ html: '📍', className: '', iconSize: [30, 30], iconAnchor: [15, 30] });
+        riderMarker = L.marker([loc.latitude, loc.longitude], { icon: riderIcon }).addTo(map);
+        destMarker = L.marker([dest.latitude, dest.longitude], { icon: destIcon }).addTo(map).bindPopup(dest.address || 'Delivery Location');
+        map.fitBounds([[loc.latitude, loc.longitude], [dest.latitude, dest.longitude]], { padding: [30, 30] });
+      } else {
+        riderMarker.setLatLng([loc.latitude, loc.longitude]);
+      }
+    }
+
+    function showError(msg) {
+      document.getElementById('loadingCard').innerHTML = `<div class="loading-block"><div style="font-size:28px; margin-bottom:12px;">❌</div><p style="color:#F87171;">${msg}</p></div>`;
+    }
+
+    async function fetchTracking() {
+      if (!orderId) return showError('Invalid tracking link — missing Order ID.');
+      try {
+        const res = await fetch(`/api/track/${orderId}`);
+        const data = await res.json();
+        if (data.error) return showError(data.error);
+
+        document.getElementById('loadingCard').style.display = 'none';
+        document.getElementById('mainUI').style.display = 'block';
+
+        const pill = document.getElementById('statusPill');
+
+        if (data.status === 'delivered') {
+          pill.className = 'status-pill status-delivered';
+          pill.innerHTML = '✨ Order Delivered!';
+          document.getElementById('distanceCard').style.display = 'block';
+          document.getElementById('distanceVal').textContent = '🎉';
+          document.getElementById('distanceNote').textContent = 'Thank you for ordering with Freemato!';
+          document.getElementById('updateNote').style.display = 'none';
+          document.getElementById('riderInfoCard').style.display = 'none';
+          return;
+        }
+
+        if (data.status !== 'out_for_delivery') {
+          pill.className = 'status-pill status-preparing';
+          pill.innerHTML = '⏳ Preparing Your Order';
+          document.getElementById('distanceCard').style.display = 'block';
+          document.getElementById('distanceVal').textContent = '👨‍🍳';
+          document.getElementById('distanceNote').textContent = 'The restaurant is getting your food ready!';
+          document.getElementById('updateNote').textContent = 'Live tracking begins once the rider picks up.';
+          return;
+        }
+
+        pill.className = 'status-pill status-active';
+        pill.innerHTML = '<div class="pulse-dot"></div>🛵 Out for Delivery';
+
+        const riderInfoCard = document.getElementById('riderInfoCard');
+        riderInfoCard.style.display = 'block';
+        document.getElementById('riderName').textContent = data.rider?.name || 'Your Rider';
+        document.getElementById('riderPhone').textContent = '📞 ' + (data.rider?.phone || 'Contact Private');
+
+        const loc = data.rider?.lastLocation;
+        const dest = data.destination;
+
+        document.getElementById('distanceCard').style.display = 'block';
+
+        if (loc?.latitude && dest?.latitude) {
+          const distKm = getDistanceKm(loc.latitude, loc.longitude, dest.latitude, dest.longitude);
+          if (distKm < 0.2) {
+            document.getElementById('distanceVal').textContent = '🏁 Arriving Now!';
+            document.getElementById('distanceNote').textContent = 'Rider is less than 200m away!';
+          } else {
+            document.getElementById('distanceVal').textContent = distKm.toFixed(2) + ' km';
+            document.getElementById('distanceNote').textContent = 'away from your location';
+          }
+          initOrUpdateMap(loc, dest);
+        } else {
+          document.getElementById('distanceVal').textContent = '🔍';
+          document.getElementById('distanceNote').textContent = 'Waiting for rider GPS signal...';
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    if (orderId) {
+      fetchTracking();
+      setInterval(fetchTracking, 5000);
+    } else {
+      showError('Missing Order ID in URL');
+    }
+  </script>
+</body>
+
+</html>

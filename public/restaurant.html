@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Freemato - Restaurant Dashboard</title>
+  <link rel="icon" type="image/png" href="/freemato-favicon.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    /* Freemato Purple Theme */
+    :root {
+      --bg: #0F172A;
+      --surface: #1E293B;
+      --surface-2: #1E293B;
+      --border: #334155;
+      --accent: #5C33ED;
+      --accent-hover: #4A24D4;
+      --accent-muted: #2E1B6B;
+      --text: #F9FAFB;
+      --muted: #9CA3AF;
+
+      --status-success-bg: #052E16;
+      --status-success-text: #4ADE80;
+      --status-warning-bg: #451A03;
+      --status-warning-text: #FBBF24;
+      --status-info-bg: #1E3A8A;
+      --status-info-text: #60A5FA;
+
+      --shadow: none;
+      --card-hover-border: #475569;
+    }
+
+    :root.light {
+      --bg: #F9FAFB;
+      --surface: #FFFFFF;
+      --surface-2: #FFFFFF;
+      --border: #E5E7EB;
+      --accent: #5C33ED;
+      --accent-hover: #4A24D4;
+      --accent-muted: #F5F3FF;
+      --text: #111827;
+      --muted: #6B7280;
+
+      --status-success-bg: #DCFCE7;
+      --status-success-text: #166534;
+      --status-warning-bg: #FEF3C7;
+      --status-warning-text: #92400E;
+      --status-info-bg: #DBEAFE;
+      --status-info-text: #1E40AF;
+
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+      --card-hover-border: #D1D5DB;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background-color 0.3s ease, color 0.2s ease;
+    }
+
+    .layout {
+      display: flex;
+      min-height: 100vh;
+      position: relative;
+      padding-left: 72px;
+    }
+
+    .ico {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .ico svg {
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      display: block;
+    }
+
+    .font-bold-large {
+      font-weight: 700;
+      font-size: 24px;
+      letter-spacing: -0.5px;
+    }
+
+    .font-label-small {
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 72px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 0;
+      gap: 8px;
+      position: fixed;
+      left: 0;
+      top: 0;
+      height: 100vh;
+      z-index: 10;
+    }
+
+    .sidebar-logo {
+      width: 40px;
+      height: 40px;
+      background: var(--accent);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      margin-bottom: 20px;
+    }
+
+    .sidebar-nav-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--muted);
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .sidebar-nav-icon:hover {
+      background: var(--surface-2);
+      color: var(--text);
+    }
+
+    .sidebar-nav-icon.active {
+      background: var(--accent-muted);
+      color: var(--accent);
+    }
+
+    /* Theme toggle */
+    .theme-toggle {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--muted);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      margin-top: 8px;
+    }
+
+    .theme-toggle:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .icon-sun {
+      display: none;
+    }
+
+    .icon-moon {
+      display: flex;
+    }
+
+    :root.light .icon-sun {
+      display: flex;
+    }
+
+    :root.light .icon-moon {
+      display: none;
+    }
+
+    /* Main */
+    .main {
+      flex: 1;
+      width: 100%;
+      padding: 32px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 36px;
+    }
+
+    .header-left h1 {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .header-left p {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .public-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 9px 16px;
+      border-radius: 40px;
+      font-size: 12.5px;
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    .live-dot-sm {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10B981;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 22px 24px;
+      position: relative;
+      box-shadow: var(--shadow);
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .stat-card:hover {
+      border-color: var(--card-hover-border);
+      transform: translateY(-2px);
+    }
+
+    .stat-label {
+      font-weight: 500;
+      font-size: 12px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .stat-value {
+      font-weight: 700;
+      font-size: 24px;
+      letter-spacing: -0.5px;
+      line-height: 1;
+      color: var(--text);
+    }
+
+    .stat-trend {
+      display: inline-flex;
+      border-radius: 20px;
+      font-size: 11px;
+      padding: 3px 8px;
+      margin-top: 8px;
+      background: var(--status-success-bg);
+      color: var(--status-success-text);
+    }
+
+    .stat-icon-circle {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--accent-muted);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Tabs Bar */
+    .tabs-bar {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 24px;
+      background: transparent;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+    }
+
+    .tab {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .tab:hover {
+      background: var(--surface-2);
+      color: var(--text);
+    }
+
+    .tab.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    /* Orders Header */
+    .orders-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .orders-header h2 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .refresh-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* Order Cards */
+    .order-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+      padding: 24px;
+      transition: border-color 0.2s;
+    }
+
+    .order-card-grid {
+      display: grid;
+      grid-template-columns: 1fr 2fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 1024px) {
+      .order-card-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .status-success {
+      background: var(--status-success-bg);
+      color: var(--status-success-text);
+    }
+
+    .status-warning {
+      background: var(--status-warning-bg);
+      color: var(--status-warning-text);
+    }
+
+    .status-info {
+      background: var(--status-info-bg);
+      color: var(--status-info-text);
+    }
+
+    .order-actions-footer {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    /* Buttons */
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, background 0.2s;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .btn-secondary:hover {
+      background: var(--surface-2);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ── Inline SVG sprite ───────────────────── -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+    <symbol id="ic-utensils" viewBox="0 0 24 24">
+      <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
+      <path d="M7 2v20" />
+      <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7" />
+    </symbol>
+    <symbol id="ic-trash" viewBox="0 0 24 24">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </symbol>
+    <symbol id="ic-alert-triangle" viewBox="0 0 24 24">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </symbol>
+    <symbol id="ic-dashboard" viewBox="0 0 24 24">
+      <rect x="3" y="3" width="7" height="9" />
+      <rect x="14" y="3" width="7" height="5" />
+      <rect x="14" y="12" width="7" height="9" />
+      <rect x="3" y="16" width="7" height="5" />
+    </symbol>
+    <symbol id="ic-book" viewBox="0 0 24 24">
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+    </symbol>
+    <symbol id="ic-bag" viewBox="0 0 24 24">
+      <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <path d="M16 10a4 4 0 0 1-8 0" />
+    </symbol>
+    <symbol id="ic-bike" viewBox="0 0 24 24">
+      <circle cx="18.5" cy="17.5" r="3.5" />
+      <circle cx="5.5" cy="17.5" r="3.5" />
+      <circle cx="15" cy="5" r="1" />
+      <path d="M12 17.5V14l-3-3 4-3 2 3h2" />
+    </symbol>
+    <symbol id="ic-barchart" viewBox="0 0 24 24">
+      <line x1="18" y1="20" x2="18" y2="10" />
+      <line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="6" y1="20" x2="6" y2="14" />
+    </symbol>
+    <symbol id="ic-settings" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="3" />
+      <path
+        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </symbol>
+    <symbol id="ic-package" viewBox="0 0 24 24">
+      <line x1="16.5" y1="9.4" x2="7.5" y2="4.21" />
+      <path
+        d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+      <line x1="12" y1="22.08" x2="12" y2="12" />
+    </symbol>
+    <symbol id="ic-clock" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </symbol>
+    <symbol id="ic-flame" viewBox="0 0 24 24">
+      <path
+        d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+    </symbol>
+    <symbol id="ic-rupee" viewBox="0 0 24 24">
+      <path d="M6 3h12" />
+      <path d="M6 8h12" />
+      <path d="m6 13 8.5 8" />
+      <path d="M6 13h3" />
+      <path d="M9 13c6.667 0 6.667-10 0-10" />
+    </symbol>
+    <symbol id="ic-phone" viewBox="0 0 24 24">
+      <path
+        d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
+    </symbol>
+    <symbol id="ic-mappin" viewBox="0 0 24 24">
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+      <circle cx="12" cy="10" r="3" />
+    </symbol>
+    <symbol id="ic-food" viewBox="0 0 24 24">
+      <path d="m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8" />
+      <path d="M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15zm0 0 7 7" />
+      <path d="m2.1 21.8 6.4-6.3" />
+      <path d="m19 5-7 7" />
+    </symbol>
+    <symbol id="ic-refresh" viewBox="0 0 24 24">
+      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+      <path d="M21 3v5h-5" />
+      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+      <path d="M8 16H3v5" />
+    </symbol>
+    <!-- Sun icon (light mode indicator) -->
+    <symbol id="ic-sun" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="5" />
+      <line x1="12" y1="1" x2="12" y2="3" />
+      <line x1="12" y1="21" x2="12" y2="23" />
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+      <line x1="1" y1="12" x2="3" y2="12" />
+      <line x1="21" y1="12" x2="23" y2="12" />
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+    </symbol>
+    <!-- Moon icon (dark mode indicator) -->
+    <symbol id="ic-moon" viewBox="0 0 24 24">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    </symbol>
+  </svg>
+
+
+
+
+  <div class="layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo" style="font-weight: 800; font-size: 20px;">
+        F
+      </div>
+      <div class="sidebar-nav-icon active" data-view="dashboard" title="Dashboard">
+        <span class="ico"><svg width="18" height="18">
+            <use href="#ic-dashboard" />
+          </svg></span>
+      </div>
+      <div class="sidebar-nav-icon" data-view="menu" title="Menu">
+        <span class="ico"><svg width="18" height="18">
+            <use href="#ic-book" />
+          </svg></span>
+      </div>
+      <div class="sidebar-nav-icon" data-view="customers" title="Customers CRM">
+        <span class="ico"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+            viewBox="0 0 24 24">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg></span>
+      </div>
+      <div class="sidebar-nav-icon" data-view="riders" title="Riders">
+        <span class="ico"><svg width="18" height="18">
+            <use href="#ic-bike" />
+          </svg></span>
+      </div>
+      <div class="sidebar-nav-icon" title="Analytics">
+        <span class="ico"><svg width="18" height="18">
+            <use href="#ic-barchart" />
+          </svg></span>
+      </div>
+      <div class="sidebar-nav-icon" data-view="settings" style="margin-top:auto;" title="Settings">
+        <span class="ico"><svg width="18" height="18">
+            <use href="#ic-settings" />
+          </svg></span>
+      </div>
+      <!-- Theme toggle at bottom of sidebar -->
+      <div class="theme-toggle" id="themeToggle" title="Toggle theme">
+        <span class="ico icon-moon"><svg width="16" height="16">
+            <use href="#ic-moon" />
+          </svg></span>
+        <span class="ico icon-sun"><svg width="16" height="16">
+            <use href="#ic-sun" />
+          </svg></span>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+
+      <!-- Header -->
+      <div class="header">
+        <div class="header-left">
+          <img src="/logo.png" alt="Freemato Logo" style="height: 50px; display: block; margin-bottom: 4px;">
+        </div>
+        <div class="header-right">
+          <a class="public-link" id="ngrokDisplay" href="#">
+            <div class="live-dot-sm"></div>
+            Loading ngrok public link...
+          </a>
+        </div>
+      </div>
+
+      <div id="dashboardView">
+        <!-- Stats -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Today's Orders</div>
+            <div class="stat-value" id="todayOrders">-</div>
+            <div class="stat-trend" id="todayOrdersTrend" style="display:none">↑ Active today</div>
+            <div class="stat-icon-circle"><span class="ico"><svg width="28" height="28">
+                  <use href="#ic-package" />
+                </svg></span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Pending Orders</div>
+            <div class="stat-value" id="pendingOrders">-</div>
+            <div class="stat-icon-circle"><span class="ico"><svg width="28" height="28">
+                  <use href="#ic-clock" />
+                </svg></span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Active Orders</div>
+            <div class="stat-value" id="activeOrders">-</div>
+            <div class="stat-icon-circle"><span class="ico"><svg width="28" height="28">
+                  <use href="#ic-flame" />
+                </svg></span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Today's Revenue</div>
+            <div class="stat-value" id="todayRevenue">₹-</div>
+            <div class="stat-trend" id="todayRevenueTrend" style="display:none">↑ 1 order</div>
+            <div class="stat-icon-circle"><span class="ico"><svg width="28" height="28">
+                  <use href="#ic-rupee" />
+                </svg></span></div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs-bar">
+          <div class="tab active" data-status="all">All Orders</div>
+          <div class="tab" data-status="pending">Pending</div>
+          <div class="tab" data-status="confirmed">Confirmed</div>
+          <div class="tab" data-status="cooking">Cooking</div>
+          <div class="tab" data-status="out_for_delivery">Out for Delivery</div>
+          <div class="tab" data-status="delivered">Delivered</div>
+        </div>
+
+        <!-- Orders list -->
+        <div class="orders-header">
+          <h2 id="ordersHeaderTitle">Orders</h2>
+          <button class="refresh-btn" id="refreshBtn">
+            <span class="ico" id="refreshIco"><svg width="13" height="13">
+                <use href="#ic-refresh" />
+              </svg></span>
+            Refresh
+          </button>
+        </div>
+
+        <div id="ordersContainer"></div>
+
+      </div> <!-- end dashboardView -->
+
+      <div id="ridersView" style="display:none;">
+        <div class="orders-header">
+          <h2>Rider Management</h2>
+          <button class="refresh-btn" onclick="loadRidersConfig()">
+            <span class="ico"><svg width="13" height="13">
+                <use href="#ic-refresh" />
+              </svg></span>
+            Refresh
+          </button>
+        </div>
+        <div id="ridersContainer"></div>
+      </div>
+
+      <div id="customersView" style="display:none;">
+        <div class="orders-header">
+          <h2>Customers CRM</h2>
+          <button class="refresh-btn" onclick="loadCustomersConfig()">
+            <span class="ico"><svg width="13" height="13">
+                <use href="#ic-refresh" />
+              </svg></span>
+            Refresh
+          </button>
+        </div>
+        <div id="customersContainer"></div>
+      </div>
+
+      <div id="menuView" style="display:none;">
+        <div class="orders-header">
+          <h2>Menu Management</h2>
+          <button class="refresh-btn" onclick="loadMenuConfig()">
+            <span class="ico"><svg width="13" height="13">
+                <use href="#ic-refresh" />
+              </svg></span>
+            Refresh
+          </button>
+        </div>
+        <div id="menuItemsContainer"></div>
+      </div>
+
+      <div id="settingsView" style="display:none; max-width: 600px;">
+        <div class="orders-header">
+          <h2>System Settings & Secrets</h2>
+        </div>
+        <div class="order-card" style="padding: 32px;">
+          <p style="color:var(--muted); font-size:14px; margin-bottom: 24px;">Manage your sensitive API tokens and
+            Webhook URLs securely.</p>
+
+          <label
+            style="display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.05em;">Ngrok
+            URL</label>
+          <input type="text" id="setNgrok" placeholder="https://..."
+            style="width:100%; padding:14px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; color:var(--text); margin-bottom:20px; font-family:'Inter', sans-serif;">
+
+          <label
+            style="display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.05em;">Telegram
+            Bot Token</label>
+          <div style="position:relative; margin-bottom:20px;">
+            <input type="password" id="setTelegram"
+              style="width:100%; padding:14px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:'Inter', sans-serif;">
+          </div>
+
+          <label
+            style="display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.05em;">Telegram
+            Rider Bot Token</label>
+          <div style="position:relative; margin-bottom:20px;">
+            <input type="password" id="setTelegramRider"
+              style="width:100%; padding:14px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:'Inter', sans-serif;">
+          </div>
+
+          <label
+            style="display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.05em;">WhatsApp
+            Token (Optional)</label>
+          <div style="position:relative; margin-bottom:20px;">
+            <input type="password" id="setWhatsapp"
+              style="width:100%; padding:14px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:'Inter', sans-serif;">
+          </div>
+
+          <label
+            style="display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.05em;">WhatsApp
+            Phone ID (Optional)</label>
+          <div style="position:relative; margin-bottom:32px;">
+            <input type="password" id="setPhoneId"
+              style="width:100%; padding:14px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:'Inter', sans-serif;">
+          </div>
+
+          <button class="btn-primary" style="width:100%; padding:14px; font-size:15px;" onclick="saveSettings()">Save
+            Configuration</button>
+          <p id="settingsFeedback"
+            style="display:none; text-align:center; color:var(--status-success-text); margin-top:16px; font-weight:600; font-size:14px;">
+            ✅ Settings saved securely!</p>
+        </div>
+
+        <!-- WhatsApp Personal (Baileys) -->
+        <div class="order-card" style="padding: 28px; margin-top: 16px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+            <div>
+              <div style="font-weight:700; font-size:15px;">📱 WhatsApp Personal Channel</div>
+              <div style="font-size:13px; color:var(--muted); margin-top:4px;">Connect a personal number via WhatsApp
+                Web scan</div>
+            </div>
+            <span id="waBadge"
+              style="padding:5px 12px; border-radius:20px; font-size:12px; font-weight:700; text-transform:uppercase; background:var(--surface-2); color:var(--muted);">Disconnected</span>
+          </div>
+
+          <div id="waQRSection" style="display:none; text-align:center; margin-bottom:16px;">
+            <p style="font-size:13px; color:var(--muted); margin-bottom:12px;">Scan this QR code with WhatsApp on your
+              phone:<br><span style="font-size:11px;">Settings → Linked Devices → Link a Device</span></p>
+            <img id="waQRImage" src="" alt="QR Code"
+              style="width:220px; height:220px; border-radius:12px; border:2px solid var(--border);">
+            <p style="font-size:11px; color:var(--muted); margin-top:10px;">QR expires every 60 seconds —
+              auto-refreshing</p>
+          </div>
+
+          <div id="waConnectedInfo"
+            style="display:none; text-align:center; padding:16px; background:var(--status-success-bg, #052E16); border-radius:10px; margin-bottom:16px;">
+            <div style="font-size:20px; margin-bottom:8px;">✅</div>
+            <div style="font-weight:700; color:#4ADE80;">Connected</div>
+            <div id="waPhoneDisplay" style="font-size:13px; color:var(--muted); margin-top:4px;"></div>
+          </div>
+
+          <div style="display:flex; gap:10px;">
+            <button id="waConnectBtn" class="btn-primary" style="flex:1; padding:12px; font-size:14px;"
+              onclick="waConnect()">Connect WhatsApp</button>
+            <button id="waDisconnectBtn"
+              style="display:none; flex:1; padding:12px; font-size:14px; background:#7F1D1D; color:#F87171; border:none; border-radius:var(--radius); cursor:pointer; font-family:'Inter',sans-serif; font-weight:600;"
+              onclick="waDisconnect()">Disconnect</button>
+          </div>
+        </div>
+
+        <!-- Data Management -->
+        <div class="order-card"
+          style="padding: 28px; margin-top: 16px; border-color: #7F1D1D; background: rgba(127, 29, 29, 0.05);">
+          <div
+            style="font-weight:700; font-size:15px; color: #F87171; margin-bottom: 16px; display:flex; align-items:center; gap:8px;">
+            <span class="ico"><svg width="18" height="18">
+                <use href="#ic-alert-triangle" />
+              </svg></span> Danger Zone
+          </div>
+          <p style="font-size:13px; color:var(--muted); margin-bottom:20px;">These actions are permanent and cannot be
+            undone.</p>
+
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <button
+              style="padding:12px; font-size:14px; background:transparent; color:#F87171; border:1px solid #7F1D1D; border-radius:var(--radius); cursor:pointer; font-family:'Inter',sans-serif; font-weight:600; text-align: left; display:flex; align-items:center; gap:8px;"
+              onclick="clearCustomerData()">
+              <span class="ico"><svg width="16" height="16">
+                  <use href="#ic-trash" />
+                </svg></span> Clear Customer Data
+            </button>
+            <button
+              style="padding:12px; font-size:14px; background:transparent; color:#F87171; border:1px solid #7F1D1D; border-radius:var(--radius); cursor:pointer; font-family:'Inter',sans-serif; font-weight:600; text-align: left; display:flex; align-items:center; gap:8px;"
+              onclick="clearRiderData()">
+              <span class="ico"><svg width="16" height="16">
+                  <use href="#ic-trash" />
+                </svg></span> Clear Rider Data
+            </button>
+            <button
+              style="padding:12px; font-size:14px; background:transparent; color:#F87171; border:1px solid #7F1D1D; border-radius:var(--radius); cursor:pointer; font-family:'Inter',sans-serif; font-weight:600; text-align: left; display:flex; align-items:center; gap:8px;"
+              onclick="clearOrderData()">
+              <span class="ico"><svg width="16" height="16">
+                  <use href="#ic-trash" />
+                </svg></span> Clear Order Data
+            </button>
+            <button
+              style="padding:12px; font-size:14px; background:#7F1D1D; color:#FCA5A5; border:none; border-radius:var(--radius); cursor:pointer; font-family:'Inter',sans-serif; font-weight:600; text-align: left; display:flex; align-items:center; gap:8px;"
+              onclick="clearAllSettings()">
+              <span class="ico"><svg width="16" height="16">
+                  <use href="#ic-alert-triangle" />
+                </svg></span> Factory Reset (Clear All Settings & Data)
+            </button>
+          </div>
+        </div>
+      </div>
+
+
+    </main>
+  </div>
+
+  <!-- SETUP WIZARD OVERLAY -->
+  <div id="setupWizard"
+    style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; padding: 20px; overflow-y: auto;">
+    <div
+      style="background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px; max-width: 600px; width: 100%; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2);">
+
+      <!-- STEP 1: Welcome & Profile -->
+      <div id="wizardStep1" style="display: block; text-align: center;">
+        <div style="margin-bottom: 24px; display: flex; align-items: center; justify-content: center; gap: 12px;">
+          <h2 style="font-size: 22px; font-weight: 500; margin: 0;">Welcome to</h2>
+          <img src="/logo.png" alt="Freemato" style="height: 28px; border-radius: 4px;">
+        </div>
+        <h1 style="font-size: 28px; font-weight: 700; margin-bottom: 12px;">Let's set up your restaurant.</h1>
+        <p style="color: var(--muted); font-size: 15px; margin-bottom: 32px;">Please provide the basic details of your
+          restaurant.</p>
+        <div style="text-align: left; margin-bottom: 20px;">
+          <label
+            style="display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 8px; text-transform: uppercase;">Restaurant
+            Name (Required)</label>
+          <input type="text" id="wizResName" placeholder="e.g. Freemato Pizzeria"
+            style="width: 100%; padding: 14px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'Inter', sans-serif;">
+        </div>
+        <div style="text-align: left; margin-bottom: 32px;">
+          <label
+            style="display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 8px; text-transform: uppercase;">Location
+            / GPS Address (Required)</label>
+          <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+            <input type="text" id="wizResLoc" placeholder="e.g. 123 Main St, New York"
+              style="flex: 1; padding: 14px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'Inter', sans-serif;">
+            <button class="btn-secondary" style="padding: 0 16px; white-space: nowrap;" onclick="getGpsLocation()"
+              type="button" id="wizGpsBtn">📍 My Location</button>
+          </div>
+          <div id="wizMap"
+            style="width: 100%; height: 200px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); z-index: 1;">
+          </div>
+          <p style="font-size: 11px; color: var(--muted); margin-top: 8px; text-align: center;">Click on the map to
+            refine your restaurant location.</p>
+        </div>
+        <button class="btn-primary" style="width: 100%; padding: 14px; font-size: 16px;"
+          onclick="nextWizardStep(1)">Next Step</button>
+      </div>
+
+      <!-- STEP 2: Menu Setup -->
+      <div id="wizardStep2" style="display: none; text-align: center;">
+        <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 12px;">Add Menu items</h2>
+        <p style="color: var(--muted); font-size: 15px; margin-bottom: 32px;">You can choose to seed a default menu to
+          test out the platform, or skip to configure it manually later.</p>
+        <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 32px;">
+          <button class="btn-primary" style="padding: 16px;" onclick="setWizardMenuChoice(true); nextWizardStep(2)">Use
+            Default Menu (Recommended for testing)</button>
+          <button class="btn-secondary" style="padding: 16px;"
+            onclick="setWizardMenuChoice(false); nextWizardStep(2)">I'll add my own items later</button>
+        </div>
+        <button class="btn-secondary"
+          style="width: 100%; padding: 14px; background: transparent; border: none; text-decoration: underline;"
+          onclick="prevWizardStep(2)">Back</button>
+      </div>
+
+      <!-- STEP 3: Communication Intro -->
+      <div id="wizardStep3" style="display: none; text-align: center;">
+        <div
+          style="width: 64px; height: 64px; background: var(--accent); border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; color: white; margin: 0 auto 20px;">
+          <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z">
+            </path>
+          </svg>
+        </div>
+        <h2 style="font-size: 28px; font-weight: 700; margin-bottom: 12px;">Let's set up the communication channels</h2>
+        <p style="color: var(--muted); font-size: 15px; margin-bottom: 32px;">Freemato uses WhatsApp and Telegram to
+          talk directly to your customers and riders. We'll guide you through setting them up.</p>
+        <div style="display: flex; gap: 12px;">
+          <button class="btn-secondary" style="flex: 1;" onclick="prevWizardStep(3)">Back</button>
+          <button class="btn-primary" style="flex: 2;" onclick="nextWizardStep(3)">Continue</button>
+        </div>
+      </div>
+
+      <!-- STEP 4: WhatsApp Business Setup -->
+      <div id="wizardStep4" style="display: none;">
+        <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 8px;">WhatsApp Business API (Optional)</h2>
+        <p style="color: var(--muted); font-size: 14px; margin-bottom: 16px;">If you have a registered Facebook
+          Developer app and WhatsApp Business account, enter your details. <a
+            href="https://developers.facebook.com/docs/whatsapp/cloud-api/get-started" target="_blank"
+            style="color: var(--accent);">Learn how to get these.</a></p>
+        <div
+          style="margin-bottom: 16px; padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.2);">
+          <p style="font-size: 12px; margin: 0; color: #60A5FA;">Step 1: Go to Meta for Developers and create an
+            App.<br>Step 2: Add WhatsApp product.<br>Step 3: Generate a permanent Access Token and find your Phone
+            Number ID.</p>
+        </div>
+        <label
+          style="display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 8px;">WHATSAPP
+          TOKEN</label>
+        <input type="text" id="wizWaToken" placeholder="EAAB..."
+          style="width: 100%; padding: 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); margin-bottom: 16px; font-family: 'Inter', sans-serif;">
+        <label style="display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 8px;">PHONE
+          NUMBER ID</label>
+        <input type="text" id="wizWaPhone" placeholder="105938..."
+          style="width: 100%; padding: 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); margin-bottom: 24px; font-family: 'Inter', sans-serif;">
+        <div style="display: flex; gap: 12px;">
+          <button class="btn-secondary" style="flex: 1;" onclick="prevWizardStep(4)">Back</button>
+          <button class="btn-primary" style="flex: 2;" onclick="nextWizardStep(4)">Skip to Personal WhatsApp /
+            Next</button>
+        </div>
+      </div>
+
+      <!-- STEP 5: WhatsApp Personal Fallback -->
+      <div id="wizardStep5" style="display: none; text-align: center;">
+        <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 8px;">Use Personal WhatsApp Instead</h2>
+        <p style="color: var(--muted); font-size: 14px; margin-bottom: 16px;">Don't worry if you don't have WhatsApp
+          Business! You can scan this QR code to connect your personal WhatsApp account right now.</p>
+        <div
+          style="background: rgba(245, 158, 11, 0.1); padding: 12px; border-radius: 8px; margin-bottom: 24px; text-align: left; border: 1px solid rgba(245, 158, 11, 0.2);">
+          <p style="font-size: 12px; color: #FBBF24; margin: 0;"><strong>Disclaimer:</strong> Using personal WhatsApp
+            relies on Web Socket pairing which can disconnect periodically. Do not use your primary personal number to
+            avoid bans.</p>
+        </div>
+        <div id="wizWaQRContainer"
+          style="background:#fff; padding:16px; border-radius:12px; display:inline-block; margin-bottom: 24px;">
+          <img id="wizWaQRImage" src="" style="width:200px; height:200px; display:none;" alt="Loading QR...">
+          <p id="wizWaStatus" style="color:#000; font-size:14px; font-weight:600; margin-bottom:0;">Loading QR...</p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+          <button class="btn-secondary" style="flex: 1;" onclick="prevWizardStep(5)">Back</button>
+          <button class="btn-primary" style="flex: 2;" onclick="nextWizardStep(5)">Continue to Telegram</button>
+        </div>
+      </div>
+
+      <!-- STEP 6: Telegram Bots -->
+      <div id="wizardStep6" style="display: none; text-align: left;">
+        <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 8px;">Telegram Bots</h2>
+        <p style="color: var(--muted); font-size: 14px; margin-bottom: 16px;">Search for <strong>@BotFather</strong> on
+          Telegram to create your bots and get your API Tokens.</p>
+        <label
+          style="display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 8px;">CUSTOMER
+          BOT TOKEN (Required if WhatsApp is skipped)</label>
+        <input type="text" id="wizTgBot" placeholder="123456789:ABCdefGHIjkl..."
+          style="width: 100%; padding: 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); margin-bottom: 16px; font-family: 'Inter', sans-serif;">
+        <label style="display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 8px;">RIDER
+          BOT TOKEN (Mandatory)</label>
+        <p style="font-size:11px; color:var(--muted); margin-top:-4px; margin-bottom:8px;">This is the only way we can
+          track and communicate with riders.</p>
+        <input type="text" id="wizTgRider" placeholder="987654321:ZYXwvu..."
+          style="width: 100%; padding: 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); margin-bottom: 24px; font-family: 'Inter', sans-serif;">
+        <div style="display: flex; gap: 12px;">
+          <button class="btn-secondary" style="flex: 1;" onclick="prevWizardStep(6)">Back</button>
+          <button class="btn-primary" style="flex: 2;" onclick="nextWizardStep(6)">Next Setup Network</button>
+        </div>
+      </div>
+
+      <!-- STEP 7: Ngrok Setup -->
+      <div id="wizardStep7" style="display: none; text-align: left;">
+        <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 8px;">Network Setup (Ngrok)</h2>
+        <p style="color: var(--muted); font-size: 14px; margin-bottom: 16px;">To receive live messages from WhatsApp and
+          Telegram, your server must be reachable from the internet.</p>
+        <div
+          style="margin-bottom: 16px; padding: 12px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.2);">
+          <p style="font-size: 12px; margin: 0; color: #34D399; margin-bottom: 8px;"><strong>1. Install Ngrok:</strong>
+            Download from <a href="https://ngrok.com/download" target="_blank"
+              style="color: #6EE7B7; text-decoration: underline;">ngrok.com</a>, extract it, and add your auth token.
+          </p>
+          <p style="font-size: 12px; margin: 0; color: #34D399;"><strong>2. Start Tunnel:</strong> Run
+            <code>ngrok http 3000</code> in your terminal. Copy the HTTPS Forwarding URL and paste it below.
+          </p>
+        </div>
+        <label style="display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 8px;">NGROK
+          URL (Required)</label>
+        <input type="text" id="wizNgrok" placeholder="https://your-url.ngrok-free.dev"
+          style="width: 100%; padding: 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); margin-bottom: 24px; font-family: 'Inter', sans-serif;">
+        <div style="display: flex; gap: 12px;">
+          <button class="btn-secondary" style="flex: 1;" onclick="prevWizardStep(7)">Back</button>
+          <button class="btn-primary" style="flex: 2;" onclick="nextWizardStep(7)">Verify Setup</button>
+        </div>
+      </div>
+
+      <!-- STEP 8: Completion -->
+      <div id="wizardStep8" style="display: none; text-align: center;">
+        <div
+          style="width: 64px; height: 64px; background: var(--status-success-bg); border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; color: var(--status-success-text); margin: 0 auto 20px;">
+          <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="3">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+          </svg>
+        </div>
+        <h2 style="font-size: 28px; font-weight: 700; margin-bottom: 12px;">Your restaurant is ready!</h2>
+        <p style="color: var(--muted); font-size: 15px; margin-bottom: 32px;">All communication channels have been
+          configured. You can now start taking orders immediately.</p>
+        <button class="btn-primary"
+          style="width: 100%; padding: 16px; font-size: 16px; background: #10B981; border: none;"
+          onclick="finishWizard()" id="finishWizBtn">Go to Dashboard</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CUSTOM MODAL OVERLAY -->
+  <div id="customModalOverlay"
+    style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.8); z-index: 10000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px);">
+    <div
+      style="background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; max-width: 400px; width: 100%; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2);">
+      <div id="cmIcon"
+        style="width: 48px; height: 48px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+      </div>
+      <h2 id="cmTitle" style="font-size: 20px; font-weight: 700; margin-bottom: 8px;"></h2>
+      <p id="cmMessage" style="color: var(--muted); font-size: 14px; margin-bottom: 24px; line-height: 1.5;"></p>
+      <div id="cmInputWrapper" style="display: none; margin-bottom: 24px;">
+        <input type="text" id="cmInput"
+          style="width: 100%; padding: 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family:'Inter', sans-serif;"
+          spellcheck="false" autocomplete="off">
+      </div>
+      <div style="display: flex; gap: 12px; justify-content: flex-end;">
+        <button id="cmBtnCancel" class="btn-secondary" style="flex: 1; display: none;">Cancel</button>
+        <button id="cmBtnConfirm" class="btn-primary" style="flex: 1;">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Freemato - Rider App</title>
+  <link rel="icon" type="image/png" href="/freemato-favicon.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0F172A;
+      --surface: #1E293B;
+      --surface-2: #273548;
+      --border: #334155;
+      --accent: #5C33ED;
+      --accent-hover: #4A24D4;
+      --accent-muted: #2E1B6B;
+      --text: #F9FAFB;
+      --muted: #9CA3AF;
+      --success-bg: #052E16;
+      --success-text: #4ADE80;
+      --danger-bg: #450A0A;
+      --danger-text: #F87171;
+      --warning-bg: #422006;
+      --warning-text: #FBBF24;
+      --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+      --radius: 12px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+    }
+
+    .page-header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .page-header img {
+      height: 32px;
+    }
+
+    .page-header-sub {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      width: 100%;
+      max-width: 480px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .card-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 16px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .status-pill.active {
+      background: var(--success-bg);
+      color: var(--success-text);
+    }
+
+    .status-pill.inactive {
+      background: var(--surface-2);
+      color: var(--muted);
+    }
+
+    .pulse-dot {
+      width: 10px;
+      height: 10px;
+      background: #4ADE80;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.5;
+        transform: scale(1.2);
+      }
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+
+    .info-row:last-child {
+      border-bottom: none;
+    }
+
+    .info-label {
+      color: var(--muted);
+    }
+
+    .info-value {
+      font-weight: 600;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .stat-box {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .stat-box .label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+
+    .stat-box .value {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      margin-bottom: 10px;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+
+    .btn:hover {
+      opacity: 0.9;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-danger {
+      background: #7F1D1D;
+      color: var(--danger-text);
+    }
+
+    .btn-success {
+      background: var(--success-bg);
+      color: var(--success-text);
+      border: 1px solid #166534;
+    }
+
+    .btn-maps {
+      background: #1A3A6B;
+      color: #60A5FA;
+      border: 1px solid #1E40AF;
+    }
+
+    .alert {
+      padding: 14px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .alert-warning {
+      background: var(--warning-bg);
+      color: var(--warning-text);
+    }
+
+    .alert-success {
+      background: var(--success-bg);
+      color: var(--success-text);
+    }
+
+    .spinner {
+      border: 3px solid var(--border);
+      border-top: 3px solid var(--accent);
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .loading {
+      text-align: center;
+      padding: 32px;
+      color: var(--muted);
+    }
+
+    .accuracy-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .acc-good {
+      background: var(--success-bg);
+      color: var(--success-text);
+    }
+
+    .acc-warn {
+      background: var(--warning-bg);
+      color: var(--warning-text);
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="page-header">
+    <img src="/logo.png" alt="Freemato">
+    <div class="page-header-sub">Rider Delivery App</div>
+  </div>
+
+  <div class="card" id="loadingCard">
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Loading order details...</p>
+    </div>
+  </div>
+
+  <div id="mainContent" style="display:none; width:100%; max-width:480px;">
+
+    <div class="card" style="padding:16px;">
+      <div id="statusPill" class="status-pill inactive">⏸️ Tracking Stopped</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📦 Order Details</div>
+      <div class="info-row"><span class="info-label">Order ID</span><span class="info-value" id="orderId">-</span></div>
+      <div class="info-row"><span class="info-label">Customer</span><span class="info-value" id="customerName">-</span>
+      </div>
+      <div class="info-row"><span class="info-label">Phone</span><span class="info-value" id="customerPhone">-</span>
+      </div>
+      <div class="info-row"><span class="info-label">Total</span><span class="info-value" id="orderTotal">-</span></div>
+      <div class="info-row"><span class="info-label">Items</span><span class="info-value" id="itemCount">-</span></div>
+      <div id="addressRow" style="display:none;">
+        <div class="info-row">
+          <span class="info-label">Deliver To</span>
+          <span class="info-value" id="customerAddress" style="text-align:right; max-width:60%;"></span>
+        </div>
+        <a id="mapsLink" href="#" target="_blank" style="display:none; margin-top:8px; text-decoration:none;">
+          <button class="btn btn-maps" style="margin-bottom:0;">🗺️ Open Address in Google Maps</button>
+        </a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📡 Tracking Stats</div>
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="label">Updates Sent</div>
+          <div class="value" id="updateCount">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="label">Last Update</div>
+          <div class="value" id="lastUpdate" style="font-size:14px; padding-top:4px;">Never</div>
+        </div>
+      </div>
+      <div id="locationAccuracy" style="display:none; text-align:center; margin-top:14px; font-size:12px;"></div>
+    </div>
+
+    <div class="card" style="padding:16px;">
+      <div id="errorMsg" class="alert alert-warning" style="display:none;"></div>
+      <div id="successMsg" class="alert alert-success" style="display:none;"></div>
+
+      <button id="startBtn" class="btn btn-primary">📍 Start Tracking</button>
+      <button id="stopBtn" class="btn btn-danger" style="display:none;">⏸️ Stop Tracking</button>
+      <button id="deliveredBtn" class="btn btn-success" style="display:none;">✅ Mark as Delivered</button>
+    </div>
+
+  </div>
+
+  <script>
+    let watchId = null, currentOrderId = null, updateCount = 0, orderData = null;
+    const API_URL = window.location.origin;
+
+    function getOrderId() {
+      return new URLSearchParams(window.location.search).get('order');
+    }
+
+    async function init() {
+      const orderId = getOrderId();
+      if (!orderId) {
+        document.getElementById('loadingCard').innerHTML = `<div class="loading"><div style="font-size:24px; margin-bottom:12px;">❌</div><p style="color:var(--danger-text);">Invalid Link — Missing Order ID</p></div>`;
+        return;
+      }
+      currentOrderId = orderId;
+      await loadOrder(orderId);
+    }
+
+    async function loadOrder(orderId) {
+      try {
+        const res = await fetch(`${API_URL}/api/restaurant/orders/${orderId}`);
+        if (!res.ok) throw new Error('Order not found');
+        orderData = await res.json();
+
+        document.getElementById('orderId').textContent = orderData.orderId;
+        document.getElementById('customerName').textContent = orderData.customerName || 'Customer';
+        document.getElementById('customerPhone').textContent = orderData.customerPhone;
+        document.getElementById('orderTotal').textContent = '₹' + orderData.total;
+        document.getElementById('itemCount').textContent = orderData.items.length + ' items';
+
+        if (orderData.deliveryAddress?.latitude) {
+          document.getElementById('customerAddress').textContent = orderData.deliveryAddress.address || 'Location Pin';
+          document.getElementById('mapsLink').href = `https://www.google.com/maps/search/?api=1&query=${orderData.deliveryAddress.latitude},${orderData.deliveryAddress.longitude}`;
+          document.getElementById('addressRow').style.display = 'block';
+        }
+
+        if (orderData.status !== 'out_for_delivery') {
+          showError(`Order status is "${orderData.status}". Tracking only works for Out for Delivery orders.`);
+        }
+
+        document.getElementById('loadingCard').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'block';
+      } catch (err) {
+        document.getElementById('loadingCard').innerHTML = `<div class="loading"><div style="font-size:24px; margin-bottom:12px;">❌</div><p style="color:var(--danger-text);">Order not found: ${err.message}</p></div>`;
+      }
+    }
+
+    if (!navigator.geolocation) showError('Geolocation is not supported by your browser.');
+
+    // ── Custom UI Modal ──
+    function riderConfirm(msg) {
+      return new Promise(resolve => {
+        const overlay = document.getElementById('customModalOverlay');
+        document.getElementById('cmTitle').textContent = 'Confirm Action';
+        document.getElementById('cmMessage').textContent = msg;
+        overlay.style.display = 'flex';
+        
+        window.cmConfirm = () => { overlay.style.display = 'none'; resolve(true); };
+        window.cmCancel = () => { overlay.style.display = 'none'; resolve(false); };
+      });
+    }
+
+    document.getElementById('startBtn').addEventListener('click', startTracking);
+    document.getElementById('stopBtn').addEventListener('click', stopTracking);
+    document.getElementById('deliveredBtn').addEventListener('click', async () => {
+      if (!(await riderConfirm('Mark this order as delivered?'))) return;
+      try {
+        const res = await fetch(`${API_URL}/api/rider/delivered/${currentOrderId}`, { method: 'POST' });
+        if (res.ok) {
+          showSuccess('Order marked as delivered! 🎉');
+          stopTracking();
+        } else { showError('Failed to mark as delivered.'); }
+      } catch (e) { showError('Error: ' + e.message); }
+    });
+
+    function startTracking() {
+      watchId = navigator.geolocation.watchPosition(onLocationSuccess, onLocationError, {
+        enableHighAccuracy: true, timeout: 10000, maximumAge: 0
+      });
+
+      const pill = document.getElementById('statusPill');
+      pill.className = 'status-pill active';
+      pill.innerHTML = '<div class="pulse-dot"></div>🟢 Tracking Active';
+
+      document.getElementById('startBtn').style.display = 'none';
+      document.getElementById('stopBtn').style.display = 'flex';
+      document.getElementById('deliveredBtn').style.display = 'flex';
+      document.getElementById('locationAccuracy').style.display = 'block';
+
+      if (document.getElementById('mapsLink').href.includes('http')) {
+        document.getElementById('mapsLink').style.display = 'block';
+      }
+
+      hideError();
+      showSuccess('Tracking started!');
+      setTimeout(() => document.getElementById('successMsg').style.display = 'none', 3000);
+    }
+
+    function stopTracking() {
+      if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+      const pill = document.getElementById('statusPill');
+      pill.className = 'status-pill inactive';
+      pill.innerHTML = '⏸️ Tracking Stopped';
+      document.getElementById('startBtn').style.display = 'flex';
+      document.getElementById('stopBtn').style.display = 'none';
+      document.getElementById('deliveredBtn').style.display = 'none';
+      document.getElementById('locationAccuracy').style.display = 'none';
+      document.getElementById('mapsLink').style.display = 'none';
+    }
+
+    async function onLocationSuccess(position) {
+      const { latitude, longitude, accuracy } = position.coords;
+      const cls = accuracy < 50 ? 'acc-good' : 'acc-warn';
+      document.getElementById('locationAccuracy').innerHTML = `<span class="accuracy-badge ${cls}">Accuracy: ±${Math.round(accuracy)}m</span>`;
+
+      try {
+        const res = await fetch(`${API_URL}/api/rider/location`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: currentOrderId, latitude, longitude, accuracy })
+        });
+        if (res.ok) {
+          updateCount++;
+          document.getElementById('updateCount').textContent = updateCount;
+          document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+          hideError();
+        } else { throw new Error('Server rejected location'); }
+      } catch (e) { showError('Failed to send location update.'); }
+    }
+
+    function onLocationError(error) {
+      const msgs = { 1: 'Allow location access in your browser settings.', 2: 'Location unavailable.', 3: 'Location timed out.' };
+      showError(msgs[error.code] || 'Unknown location error.');
+      stopTracking();
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('errorMsg');
+      el.innerHTML = '⚠️ ' + msg;
+      el.style.display = 'flex';
+    }
+    function hideError() { document.getElementById('errorMsg').style.display = 'none'; }
+    function showSuccess(msg) {
+      const el = document.getElementById('successMsg');
+      el.innerHTML = '✅ ' + msg;
+      el.style.display = 'flex';
+    }
+
+    init();
+  </script>
+
+  <!-- CUSTOM MODAL OVERLAY -->
+  <div id="customModalOverlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.8); z-index: 10000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px);">
+    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; max-width: 400px; width: 100%; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2);">
+      <div id="cmIcon" style="width: 48px; height: 48px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 20px; background: var(--accent-muted); color: var(--accent); font-size: 24px;">❓</div>
+      <h2 id="cmTitle" style="font-size: 20px; font-weight: 700; margin-bottom: 8px;"></h2>
+      <p id="cmMessage" style="color: var(--muted); font-size: 14px; margin-bottom: 24px; line-height: 1.5;"></p>
+      <div style="display: flex; gap: 12px; justify-content: flex-end;">
+        <button class="btn-secondary" style="flex: 1;" onclick="document.getElementById('customModalOverlay').style.display='none'; if(window.cmCancel) window.cmCancel()">Cancel</button>
+        <button class="btn-primary" style="flex: 1;" onclick="document.getElementById('customModalOverlay').style.display='none'; if(window.cmConfirm) window.cmConfirm()">OK</button>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>
